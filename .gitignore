@@ -1,0 +1,8 @@
+weights/*
+videos/*
+output/
+output_json/*
+*.ipynb
+*__pycache__
+logger/*
+*.pyc

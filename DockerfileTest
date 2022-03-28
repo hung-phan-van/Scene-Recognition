@@ -1,0 +1,10 @@
+FROM python:3.8-slim as app
+
+COPY test_requirements.txt .
+RUN apt-get update && apt-get -y install libgl1-mesa-glx libglib2.0-0
+RUN python3 -m pip install --upgrade pip && python3 -m pip install -r test_requirements.txt
+
+WORKDIR /usr/local/app
+COPY . /usr/local/app
+
+ENTRYPOINT pytest unit_tests

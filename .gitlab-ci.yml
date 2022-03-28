@@ -1,0 +1,65 @@
+stages:
+  - test
+  - build
+  - before_deploy
+  - release
+  
+variables:
+  DOCKER_IMAGE_NAME: scene-recog
+  DATA: /data/scene
+
+test:unit-test:
+  stage: test
+  script:
+    - docker build -f DockerfileTest -t ${DOCKER_IMAGE_NAME}:test .
+    - docker run -i --rm ${DOCKER_IMAGE_NAME}:test
+  only:
+    refs:
+      - dev
+      - master
+      - /^release\/*/i
+
+
+.dockerize:
+  stage: build
+  script:
+    - docker build -t ${IMAGE_TAG} .
+    - docker push ${IMAGE_TAG}
+
+dockerize:master:
+  extends: .dockerize
+  stage: build
+  before_script:
+    - IMAGE_TAG=${DOCKER_HUB}/${DOCKER_IMAGE_NAME}:m-${CI_COMMIT_SHORT_SHA}
+  only:
+    refs:
+      - master
+
+dockerize:release:
+  extends: .dockerize
+  stage: build
+  before_script:
+    - IMAGE_TAG=${DOCKER_HUB}/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_NAME##*/}-${CI_COMMIT_SHORT_SHA}
+  only:
+    refs:
+      - /^release\/*/i
+
+clean-docker-image-test:
+  stage: before_deploy
+  script:
+    - docker rmi --force $(docker images -f reference="${DOCKER_IMAGE_NAME}:test" -q)
+  when: always
+  except:
+    refs:
+      - tags
+  allow_failure: true
+  
+clean-docker-image:
+  stage: before_deploy
+  script:
+    - docker rmi --force $(docker images -f reference="${DOCKER_HUB}/${DOCKER_IMAGE_NAME}" -q)
+  when: always
+  except:
+    refs:
+      - tags
+  allow_failure: true
